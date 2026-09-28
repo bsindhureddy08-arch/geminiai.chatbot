@@ -1,35 +1,42 @@
 import streamlit as st
-from dotenv import load_dotenv
-import os
-from google import genai
+import ollama
 
-load_dotenv()
-api_key = os.getenv("GEMINI_API_KEY")
+st.set_page_config(page_title="AI Chatbot", page_icon="🤖")
 
-client = genai.Client
-client = genai.Client(api_key=api_key)
-st.set_page_config(
-    page_title="Gemini AI Chatbot",
-    page_icon="🤖",
-    layout="centered"
-)
+st.title("🤖 AI CHATBOT")
+st.write("Welcome to your AI chatbot!")
 
-st.title("🤖Gemini AI Chatbot")
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-st.write("Ask Gemini anything!")
+# Display previous messages
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
 
-prompt = st.text_area(
-    "Enter your prompt:",
-    placeholder="Explain Artificial Intelligence in simple words..."
-)
-if st.button("Generate Response"):
-    if prompt:
-        with st.spinner("Gemini is thinking..."):
-            response = client.models.generate_content(
-                model="gemini-3.5-flash-lite",
-                contents=prompt
-            )
-        st.success("Response generated!")
-        st.write(response.text)
-    else:
-        st.warning("Please enter a prompt.")
+prompt = st.chat_input("Enter your prompt...")
+
+if prompt:
+    # Show user message
+    st.chat_message("user").write(prompt)
+
+    st.session_state.messages.append({
+        "role": "user",
+        "content": prompt
+    })
+
+    # Send conversation to Ollama
+    response = ollama.chat(
+        model="llama3.2",
+        messages=st.session_state.messages
+    )
+
+    answer = response["message"]["content"]
+
+    # Show AI response
+    st.chat_message("assistant").write(answer)
+
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": answer
+    })
